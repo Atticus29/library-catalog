@@ -55,6 +55,17 @@ public class PatronTest {
     assertEquals(Patron.find(secondPatron.getId()), secondPatron);
   }
 
+  @Test
+  public void update_updatesPatronName_true() {
+    testPatron.update("Jahan Miller", "133 Maple Lane Portland, OR 97203", "6095779898", "jahan@hotmail.com");
+    assertEquals("Jahan Miller", Patron.find(testPatron.getId()).getName());
+  }
 
+  @Test
+  public void delete_deletesPatron_true() {
+    int myPatronId = testPatron.getId();
+    testPatron.delete();
+    assertEquals(null, Patron.find(myPatronId));
+  }
 
 }

@@ -51,10 +51,10 @@ public class Patron {
     } else {
       Patron newPatron = (Patron) otherPatron;
       return this.getName().equals(newPatron.getName())
-        && this.getAddress().equals(newPatron.getAddress()) &&
-        this.getPhone().equals(newPatron.getPhone()) &&
-        this.getEmail().equals(newPatron.getEmail()) &&
-        this.getId() == newPatron.getId();
+      && this.getAddress().equals(newPatron.getAddress()) &&
+      this.getPhone().equals(newPatron.getPhone()) &&
+      this.getEmail().equals(newPatron.getEmail()) &&
+      this.getId() == newPatron.getId();
     }
   }
 
@@ -62,12 +62,12 @@ public class Patron {
     String sqlCommand = "INSERT INTO patrons (name, address, phone, email) VALUES (:name, :address, :phone, :email)";
     try(Connection con = DB.sql2o.open()){
       this.id = (int) con.createQuery(sqlCommand, true)
-        .addParameter("name", this.name)
-        .addParameter("address", this.address)
-        .addParameter("phone", this.phone)
-        .addParameter("email", this.email)
-        .executeUpdate()
-        .getKey();
+      .addParameter("name", this.name)
+      .addParameter("address", this.address)
+      .addParameter("phone", this.phone)
+      .addParameter("email", this.email)
+      .executeUpdate()
+      .getKey();
     }
   }
 
@@ -75,7 +75,7 @@ public class Patron {
     String sqlCommand = "SELECT * FROM patrons;";
     try(Connection con = DB.sql2o.open()){
       List<Patron> results = con.createQuery(sqlCommand)
-        .executeAndFetch(Patron.class);
+      .executeAndFetch(Patron.class);
       return results;
     }
   }
@@ -84,9 +84,32 @@ public class Patron {
     String sqlCommand = "SELECT * FROM patrons WHERE id=:id;";
     try(Connection con = DB.sql2o.open()){
       Patron result = con.createQuery(sqlCommand)
-        .addParameter("id", id)
-        .executeAndFetchFirst(Patron.class);
+      .addParameter("id", id)
+      .executeAndFetchFirst(Patron.class);
       return result;
+    }
+  }
+
+  public void update(String name, String address, String phone, String email) {
+    try(Connection con = DB.sql2o.open()) {
+      String sql = "UPDATE patrons SET name = :name, address=:address, phone=:phone, email=:email WHERE id = :id";
+      con.createQuery(sql)
+      .addParameter("name", name)
+      .addParameter("address", address)
+      .addParameter("phone", phone)
+      .addParameter("email", email)
+      .addParameter("id", this.id)
+      .executeUpdate();
+    }
+  }
+
+
+  public void delete(){
+    String sqlCommand = "DELETE FROM patrons WHERE id=:id;";
+    try(Connection con=DB.sql2o.open()){
+      con.createQuery(sqlCommand)
+      .addParameter("id", this.id)
+      .executeUpdate();
     }
   }
 
