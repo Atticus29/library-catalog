@@ -10,6 +10,7 @@ public class Patron {
   private String address;
   private String phone;
   private String email;
+  private int id;
 
 
   public Patron(String name, String address, String phone, String email) {
@@ -35,6 +36,14 @@ public class Patron {
     return this.email;
   }
 
+  public int getId(){
+    return this.id;
+  }
+
+  public void setId(int id){
+    this.id = id;
+  }
+
   @Override
   public boolean equals(Object otherPatron) {
     if(!(otherPatron instanceof Patron)) {
@@ -44,7 +53,8 @@ public class Patron {
       return this.getName().equals(newPatron.getName())
         && this.getAddress().equals(newPatron.getAddress()) &&
         this.getPhone().equals(newPatron.getPhone()) &&
-        this.getEmail().equals(newPatron.getEmail());
+        this.getEmail().equals(newPatron.getEmail()) &&
+        this.getId() == newPatron.getId();
     }
   }
 

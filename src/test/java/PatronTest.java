@@ -5,10 +5,13 @@ import static org.junit.Assert.*;
 public class PatronTest {
   private Patron testPatron;
 
+  @Rule
+  public DatabaseRule database = new DatabaseRule();
+
   @Before
   public void setUp() {
     testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
-    // testPatron.save();
+    testPatron.save();
   }
 
   @Test
@@ -25,9 +28,10 @@ public class PatronTest {
   }
 
   @Test
-  public void equals_returnsTrueIfNameAndPersonIdAreSame_true() {
-    Patron anotherPatron = new Patron("Bubbles", 1);
-    assertTrue(testPatron.equals(anotherPatron));
+  public void equals_returnsTrueIfNameAddressPhoneEmailAreSame_true() {
+    // Patron anotherPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    Patron retrievedPatron = Patron.find(testPatron.getId());
+    assertTrue(testPatron.equals(retrievedPatron));
   }
 
   @Test
@@ -38,7 +42,7 @@ public class PatronTest {
 
   @Test
   public void all_returnsAllInstancesOfPatron_true(){
-    Patron secondPatron = new Patron ("Spud", 1);
+    Patron secondPatron = new Patron ("Jahan Miller", "133 Maple Lane Portland, OR 97203", "6095779898", "jahan@gmail.com");
     secondPatron.save();
     assertTrue(Patron.all().get(0).equals(testPatron));
     assertTrue(Patron.all().get(1).equals(secondPatron));
@@ -46,7 +50,7 @@ public class PatronTest {
 
   @Test
   public void find_returnsPatronWithSameId_secondPatron(){
-    Patron secondPatron = new Patron("Spud", 3);
+    Patron secondPatron = new Patron ("Jahan Miller", "133 Maple Lane Portland, OR 97203", "6095779898", "jahan@gmail.com");
     secondPatron.save();
     assertEquals(Patron.find(secondPatron.getId()), secondPatron);
   }

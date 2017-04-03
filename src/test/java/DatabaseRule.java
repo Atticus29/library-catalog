@@ -2,9 +2,10 @@ import org.junit.rules.ExternalResource;
 import org.sql2o.*;
 
 public class DatabaseRule extends ExternalResource {
+
   @Override
   protected void before() {
-    DB.sql2o new Sql2o("jdbc:postresql://localhost:5432/library-catalog-test", null, null);
+    DB.sql2o = new Sql2o("jdbc:postgresql://localhost:5432/library_catalog_test", null, null);
   }
 
   @Override
@@ -14,5 +15,6 @@ public class DatabaseRule extends ExternalResource {
       String deletePatronsQuery = "DELETE FROM patrons *;";
       // con.createQuery(deleteBooksQuery).executeUpdate();
       con.createQuery(deletePatronsQuery).executeUpdate();
+    }
   }
 }
