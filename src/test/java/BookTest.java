@@ -54,4 +54,53 @@ public class BookTest {
     assertTrue(Book.all().get(1).equals(secondBook));
   }
 
+  @Test
+  public void find_returnsBookWithSameId_secondBook() {
+    Book secondBook = new Book ("Book2", "Jane Austin", 1);
+    secondBook.save();
+    assertEquals(Book.find(secondBook.getId()), secondBook);
+  }
+
+  @Test
+  public void update_updatesBookName_true() {
+    testBook.update("Bookbook", "Bark Twain");
+    assertEquals("Bookbook", Book.find(testBook.getId()).getTitle());
+  }
+
+  @Test
+  public void delete_deletesBook_true() {
+    int testBookId = testBook.getId();
+    testBook.delete();
+    assertEquals(null, Book.find(testBookId));
+  }
+
+  @Test
+  public void checkout_addsEntryTocheckoutsJoinTable_true(){
+    testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    testPatron.save();
+    testBook.checkout(testPatron);
+    assertTrue(testBook.isCheckedOut());
+    List<Patron> patronsWhoHaveCheckedThisBookOut = testBook.getPatronRecords();
+    assertEquals(1, patronsWhoHaveCheckedThisBookOut.size());
+  }
+
+  @Test
+  public void getPatronRecords_returnsListOfPatrons_true(){
+    testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    testPatron.save();
+    testBook.checkout(testPatron);
+    List<Patron> patronsWhoHaveCheckedThisBookOut = testBook.getPatronRecords();
+    assertTrue(patronsWhoHaveCheckedThisBookOut instanceof List);
+    assertTrue(patronsWhoHaveCheckedThisBookOut.get(0) instanceof Patron);
+  }
+
+  @Test
+  public void isCheckedOut_instantiatesAsFalseAndReturnsTrueAfterCheckout_true(){
+    testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    testPatron.save();
+    assertFalse(testBook.isCheckedOut());
+    testBook.checkout(testPatron);
+    assertTrue(testBook.isCheckedOut());
+  }
+
 }
