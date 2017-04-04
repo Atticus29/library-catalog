@@ -8,11 +8,14 @@ public class Book {
   private String title;
   private String author;
   private int patronId;
+  private boolean checkedOut;
+  public static final int MAX_RENEW_COUNT = 2;
 
   public Book(String title, String author, int patronId) {
     this.title = title;
     this.author = author;
     this.patronId = patronId;
+    checkedOut = false;
   }
 
   public String getTitle() {
@@ -31,6 +34,18 @@ public class Book {
     return id;
   }
 
+
+  public Timestamp getDueDate(Patron patron) {
+    String sqlCommand = "SELECT due_date FROM checkouts WHERE patronid = :patronid AND bookid = :bookid;";
+    try(Connection con=DB.sql2o.open()){
+      Timestamp dueDate = con.createQuery(sqlCommand)
+      .addParameter("patronid", patron.getId())
+      .addParameter("bookid", this.id)
+      .executeAndFetchFirst(Timestamp.class);
+      return dueDate;
+    }
+  }
+
   @Override
   public boolean equals(Object otherBook) {
     if(!(otherBook instanceof Book)){
@@ -38,9 +53,9 @@ public class Book {
     } else {
       Book newBook = (Book) otherBook;
       return this.getId() == newBook.getId()
-        && this.getTitle().equals(newBook.getTitle())
-        && this.getAuthor().equals(newBook.getAuthor())
-        && this.getPatronId() == newBook.getPatronId();
+      && this.getTitle().equals(newBook.getTitle())
+      && this.getAuthor().equals(newBook.getAuthor())
+      && this.getPatronId() == newBook.getPatronId();
     }
   }
 
@@ -48,11 +63,11 @@ public class Book {
     String sql = "INSERT INTO books (title, author, patronId) VALUES (:title, :author, :patronId)";
     try(Connection con = DB.sql2o.open()) {
       this.id = (int) con.createQuery(sql, true)
-        .addParameter("title", this.title)
-        .addParameter("author", this.author)
-        .addParameter("patronId", this.patronId)
-        .executeUpdate()
-        .getKey();
+      .addParameter("title", this.title)
+      .addParameter("author", this.author)
+      .addParameter("patronId", this.patronId)
+      .executeUpdate()
+      .getKey();
     }
   }
 
@@ -60,7 +75,7 @@ public class Book {
     String sql = "SELECT * FROM books;";
     try(Connection con = DB.sql2o.open()) {
       List<Book> books = con.createQuery(sql)
-        .executeAndFetch(Book.class);
+      .executeAndFetch(Book.class);
       return books;
     }
   }
@@ -69,8 +84,8 @@ public class Book {
     String sqlCommand = "SELECT * FROM books WHERE id=:id;";
     try(Connection con=DB.sql2o.open()){
       Book result = con.createQuery(sqlCommand)
-        .addParameter("id", id)
-        .executeAndFetchFirst(Book.class);
+      .addParameter("id", id)
+      .executeAndFetchFirst(Book.class);
       return result;
     }
   }
@@ -96,41 +111,81 @@ public class Book {
   }
 
   public void checkout(Patron patron){
-    String sqlCommand = "INSERT INTO checkouts (bookid, patronid, checkout_date, due_date, renew_count) VALUES (:bookid, :patronid, now(), now() + INTERVAL '14 days', 0);";
+    String sqlCommand = "INSERT INTO checkouts (bookid, patronid, checkout_date, due_date, renew_count, checked_out) VALUES (:bookid, :patronid, now(), now() + INTERVAL '14 days', 0, :checked_out);";
     try(Connection con = DB.sql2o.open()){
       con.createQuery(sqlCommand)
-        .addParameter("bookid", this.id)
-        .addParameter("patronid", patron.getId())
-        .executeUpdate();
+      .addParameter("bookid", this.id)
+      .addParameter("patronid", patron.getId())
+      .addParameter("checked_out", this.isCheckedOut())
+      .executeUpdate();
     }
+    this.checkedOut = true;
   }
 
   public List<Patron> getPatronRecords() {
-    String sql = "SELECT patrons.* FROM books
-      JOIN checkouts ON (books.id = checkouts.bookid)
-      JOIN patrons ON (checkouts.patronid = patrons.id)
-      WHERE books.id = :id;";
+    String sql = "SELECT patrons.* FROM books JOIN checkouts ON (books.id = checkouts.bookid) JOIN patrons ON (checkouts.patronid = patrons.id) WHERE books.id = :id;" ;
     try(Connection con = DB.sql2o.open()) {
       List<Patron> results = con.createQuery(sql)
       .addParameter("id", this.id)
       .executeAndFetch(Patron.class);
-    return results;
+      return results;
     }
   }
 
-public boolean isCheckedOut(){
-  String sqlCommand = "SELECT return_date FROM checkouts WHERE bookid=:bookid ORDER BY checkout_date;";
-  // test that this return most recent book entry
-  try(Connection con=DB.sql2o.open()){
-    Timestamp returnDate = con.createQuery(sqlCommand)
-      .addParameter("bookid", this.id)
-      .executeAndFetchFirst(Timestamp.class);
-    return false;
-    // rightNow = new Timestamp(new Date().getTime());
-    // return returnDate.after(rightNow);
-  }catch(){
-    return true;
+  public boolean isCheckedOut(){
+    return this.checkedOut;
+    // if(this.getPatronRecords().size()==0){
+    //   return false;
+    // } else{
+    //   String sqlCommand = "SELECT return_date FROM checkouts WHERE bookid=:bookid ORDER BY checkout_date;";
+    //   // test that this return most recent book entry
+    //   try(Connection con=DB.sql2o.open()){
+    //     Timestamp returnDate = con.createQuery(sqlCommand)
+    //     .addParameter("bookid", this.id)
+    //     .executeAndFetchFirst(Timestamp.class);
+    //     return false;
+    //   }catch(RuntimeException e){
+    //     System.out.println(e.getClass().getName());
+    //     return true;
+    //   }
+    // }
   }
-}
+
+  public boolean canBeRenewedAgain(Patron patron){
+    String sqlCommand = "SELECT renew_count FROM checkouts WHERE bookid=:bookid AND patronid=:patronid;";
+    try(Connection con = DB.sql2o.open()){
+      int renewsSoFar = con.createQuery(sqlCommand)
+        .addParameter("bookid", this.id)
+        .addParameter("patronid", patron.getId())
+        .executeAndFetchFirst(Integer.class);
+      return renewsSoFar < this.MAX_RENEW_COUNT;
+    }
+  }
+
+  public void renew(Patron patron) {
+    if(this.canBeRenewedAgain(patron)){
+      String sql = "UPDATE checkouts  SET renew_count = renew_count + 1, due_date = due_date + INTERVAL '14 days' WHERE bookid = :bookid AND patronid=:patronid";
+      try(Connection con = DB.sql2o.open()) {
+        con.createQuery(sql)
+        .addParameter("bookid", this.id)
+        .addParameter("patronid", patron.getId())
+        .executeUpdate();
+      }
+    }
+  }
+
+  public boolean isOverdue(Timestamp currentTime, Patron patron){
+    String sqlCommand = "SELECT due_date FROM checkouts WHERE bookid=:bookid AND patronid=:patronid;";
+    try(Connection con=DB.sql2o.open()){
+      Timestamp due = con.createQuery(sqlCommand)
+      .addParameter("bookid", this.id)
+      .addParameter("patronid", patron.getId())
+      .executeAndFetchFirst(Timestamp.class);
+      return currentTime.after(due);
+    }
+  }
 
 }
+
+// rightNow = new Timestamp(new Date().getTime());
+// return returnDate.after(rightNow);

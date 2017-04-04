@@ -2,6 +2,9 @@ import org.sql2o.*;
 import org.junit.*;
 import static org.junit.Assert.*;
 import java.util.List;
+import java.util.Calendar;
+import java.sql.Timestamp;
+import java.util.Date;
 
 public class BookTest {
 
@@ -76,7 +79,7 @@ public class BookTest {
 
   @Test
   public void checkout_addsEntryTocheckoutsJoinTable_true(){
-    testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    Patron testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
     testPatron.save();
     testBook.checkout(testPatron);
     assertTrue(testBook.isCheckedOut());
@@ -86,7 +89,7 @@ public class BookTest {
 
   @Test
   public void getPatronRecords_returnsListOfPatrons_true(){
-    testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    Patron testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
     testPatron.save();
     testBook.checkout(testPatron);
     List<Patron> patronsWhoHaveCheckedThisBookOut = testBook.getPatronRecords();
@@ -96,11 +99,65 @@ public class BookTest {
 
   @Test
   public void isCheckedOut_instantiatesAsFalseAndReturnsTrueAfterCheckout_true(){
-    testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    Patron testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
     testPatron.save();
     assertFalse(testBook.isCheckedOut());
     testBook.checkout(testPatron);
     assertTrue(testBook.isCheckedOut());
+  }
+
+  @Test
+  public void getDueDate_getsATimeStamp_true(){
+    Patron testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    testPatron.save();
+    testBook.checkout(testPatron);
+    Timestamp due = testBook.getDueDate(testPatron);
+    Timestamp rightNow = new Timestamp(new Date().getTime());
+    assertEquals(rightNow.getDay(), due.getDay());
+  }
+
+  @Test
+  public void renew_extendsDueDate() {
+    Patron testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    testPatron.save();
+    testBook.checkout(testPatron);
+    Timestamp rightNow = new Timestamp(new Date().getTime());
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(rightNow);
+    cal.add(Calendar.DATE, 14);
+    Calendar cal2 = Calendar.getInstance();
+    cal2.setTime(testBook.getDueDate(testPatron));
+    assertEquals(cal.getTime().getDate(), cal2.getTime().getDate());
+  }
+
+  @Test
+  public void isOverdue_checksIfBookOverdue_true() {
+    Patron testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    testPatron.save();
+    testBook.checkout(testPatron);
+    // http://stackoverflow.com/questions/22856931/converting-java-date-to-sql-timestamp
+    Timestamp rightNow = new Timestamp(new Date().getTime());
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(rightNow);
+    cal.set(Calendar.MILLISECOND, 0);
+    Timestamp currentTime = new Timestamp(cal.getTimeInMillis());
+    assertFalse(testBook.isOverdue(currentTime, testPatron));
+    cal.add(Calendar.DATE, 15);
+    cal.set(Calendar.MILLISECOND, 0);
+    currentTime = new Timestamp(cal.getTimeInMillis());
+    assertTrue(testBook.isOverdue(currentTime, testPatron));
+  }
+
+  @Test
+  public void canBeRenewedAgain_checksWhetherABookCanBeRenewedSeveralTimes(){
+    Patron testPatron = new Patron("Ryan Murphy", "123 Maple Lane Portland, OR 97203", "5046179123", "ryan.murphy@gmail.com");
+    testPatron.save();
+    testBook.checkout(testPatron);
+    assertTrue(testBook.canBeRenewedAgain(testPatron));
+    testBook.renew(testPatron);
+    assertTrue(testBook.canBeRenewedAgain(testPatron));
+    testBook.renew(testPatron);
+    assertFalse(testBook.canBeRenewedAgain(testPatron));
   }
 
 }
