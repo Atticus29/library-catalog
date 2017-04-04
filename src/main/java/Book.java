@@ -64,4 +64,14 @@ public class Book {
     }
   }
 
+  public static Book find(int id){
+    String sqlCommand = "SELECT * FROM books WHERE id=:id;";
+    try(Connection con=DB.sql2o.open()){
+      Book result = con.createQuery(sqlCommand)
+        .addParameter("id", id)
+        .executeAndFetchFirst(Book.class);
+      return result;
+    }
+  }
+
 }

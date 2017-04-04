@@ -30,19 +30,18 @@ public class BookTest {
 
   @Test
   public void equals_returnsTrueIfDescriptionsSame() {
-    Book secondBook = new Book("Booky McBookface", "Mark Twain", 1);
-    assertTrue(testBook.equals(secondBook));
+    // Book secondBook = new Book("Booky McBookface", "Mark Twain", 1);
+    Book retrievedBook = Book.find(testBook.getId());
+    assertTrue(testBook.equals(retrievedBook));
   }
 
   @Test
   public void save_savesIntoDatabase() {
-    testBook.save();
     assertTrue(Book.all().get(0).equals(testBook));
   }
 
   @Test
   public void save_assignsIdToBook() {
-    testBook.save();
     Book savedBook = Book.all().get(0);
     assertEquals(testBook.getId(), savedBook.getId());
   }
