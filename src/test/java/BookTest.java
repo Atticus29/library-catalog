@@ -1,20 +1,58 @@
 import org.sql2o.*;
 import org.junit.*;
 import static org.junit.Assert.*;
+import java.util.List;
 
 public class BookTest {
 
+  private Book testBook;
+
   @Before
   public void setUp() {
-    DB.sql2o = new Sql2o("jdbc:postgresql://localhost:5432/library_catalog_test", null, null);
+    testBook = new Book("Booky McBookface", "Mark Twain", 1);
+    testBook.save();
   }
 
-  @After
-  public void tearDown() {
-    try (Connection con = DB.sql2o.open()) {
-      String sql = "DELETE FROM name_of_your_table *;";
-      con.createQuery(sql).executeUpdate();
-    }
+  @Rule
+  public DatabaseRule database = new DatabaseRule();
+
+  @Test
+  public void book_instantiatesCorrectly_true() {
+    assertTrue(testBook instanceof Book);
+  }
+
+  @Test
+  public void getters_returnBookVariableValues() {
+    assertEquals("Booky McBookface", testBook.getTitle());
+    assertEquals("Mark Twain", testBook.getAuthor());
+    assertEquals(1, testBook.getPatronId());
+  }
+
+  @Test
+  public void equals_returnsTrueIfDescriptionsSame() {
+    Book secondBook = new Book("Booky McBookface", "Mark Twain", 1);
+    assertTrue(testBook.equals(secondBook));
+  }
+
+  @Test
+  public void save_savesIntoDatabase() {
+    testBook.save();
+    assertTrue(Book.all().get(0).equals(testBook));
+  }
+
+  @Test
+  public void save_assignsIdToBook() {
+    testBook.save();
+    Book savedBook = Book.all().get(0);
+    assertEquals(testBook.getId(), savedBook.getId());
+  }
+
+  @Test
+  public void all_returnsAllInstancesOfBook_true() {
+    Book secondBook = new Book ("Book2", "Jane Austin", 1);
+    secondBook.save();
+    assertTrue(Book.all().get(0).equals(testBook));
+    assertTrue(Book.all().get(1).equals(secondBook));
   }
 
 }
